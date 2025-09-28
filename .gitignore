@@ -1,0 +1,34 @@
+# Bazel generated directories
+bazel-*
+
+# Build directories
+build/
+draft
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# C++ build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Temporary files
+*~
+*.swp
+*.swo
+.DS_Store
+
+# OpenFOAM generated files
+canal_base/processor*
+canal_base/postProcessing/
+canal_base/0.*/
+canal_base/[1-9]*/
+canal_base/constant/polyMesh/
+canal_base/system/meshDict*
+
+# Module cache
+MODULE.bazel.lock
