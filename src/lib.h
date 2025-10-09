@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
-Cantera::AnyMap mechanism_map(const Cantera::AnyMap &phases,
-                              const std::vector<Cantera::AnyMap> &species,
-                              const std::vector<Cantera::AnyMap> &reactions) {
+Cantera::AnyMap build_mechanism_definition(const Cantera::AnyMap &phases,
+                                           const std::vector<Cantera::AnyMap> &species,
+                                           const std::vector<Cantera::AnyMap> &reactions) {
   Cantera::AnyMap rootNode;
 
   // Cantera::AnyMap modifiedPhase = phases;

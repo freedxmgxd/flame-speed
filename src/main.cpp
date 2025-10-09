@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 
     // auto new_sol =
     //     modified_solution(phaseNode, species, reactionDefs, "mixture-averaged");
-    rootNode = mechanism_map(phaseNode, species, reactionDefs);
+    rootNode = build_mechanism_definition(phaseNode, species, reactionDefs);
 
     // std::ofstream out(
     //     "/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml");
