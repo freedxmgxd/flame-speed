@@ -18,7 +18,9 @@ cc_binary(
         "-pthread",
         "-lcantera_shared",
         "-lfmt",
-        "-lpthread"
+        "-lpthread",
+        "-limgui",
+        "-limplot",
     ],
     deps = [":lib"],
 )
