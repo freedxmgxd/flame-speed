@@ -42,7 +42,7 @@ Cantera::AnyMap mechanism_map(const Cantera::AnyMap &phases,
 static double null_value = -1.0;
 static std::multimap<std::string, std::pair<std::string, double>>
     empty_reactions;
-termo_state
+thermo_state
 flamespeed(std::shared_ptr<Cantera::Solution> sol, double temperature,
            double pressure, double uin, double mixture_ratio,
            const std::string &fuelComp, const std::string &oxComp,
@@ -273,7 +273,7 @@ flamespeed(std::shared_ptr<Cantera::Solution> sol, double temperature,
       //           << " max normalized rate = " << Rmax[i] << "\n";
     }
 
-    termo_state state;
+    thermo_state state;
     state.flamespeed = Uvec[0];
     state.Tad = Tad;
     state.Tmax = T_max;
@@ -282,9 +282,9 @@ flamespeed(std::shared_ptr<Cantera::Solution> sol, double temperature,
     return state;
   } catch (Cantera::CanteraError &err) {
     std::cerr << err.what() << std::endl;
-    return termo_state{};
+    return thermo_state{};
   }
-  return termo_state{};
+  return thermo_state{};
 }
 
 template <typename Function, typename... Args>

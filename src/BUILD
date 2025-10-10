@@ -12,15 +12,13 @@ cc_binary(
     name = "main",
     srcs = ["main.cpp"],
     copts = [
-        "-std=c++17",
+        "-std=c++23",
     ],
     linkopts = [
         "-pthread",
         "-lcantera_shared",
         "-lfmt",
         "-lpthread",
-        "-limgui",
-        "-limplot",
     ],
     deps = [":lib"],
 )

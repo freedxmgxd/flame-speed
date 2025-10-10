@@ -42,9 +42,11 @@ struct output {
   double speed_flame_reduced;
   double temperature_ad_reduced;
   double temperature_max_reduced;
+  double z_t_max_reduced;
   double speed_flame_full;
   double temperature_ad_full;
   double temperature_max_full;
+  double z_t_max_full;
 };
 
 int main(int argc, char **argv) {
@@ -71,11 +73,11 @@ int main(int argc, char **argv) {
   std::multimap<std::string, std::pair<std::string, double>> Reactions;
 
   auto flow_complete = flamespeed(sol_complete, temperature, pressure, uin,
-                          mixture_fraction_stoichiometric, fuel, oxidizer,
-                          refine_grid, loglevel, Reactions);
+                                  mixture_fraction_stoichiometric, fuel,
+                                  oxidizer, refine_grid, loglevel, Reactions);
 
-  std::cout << "Flame speed (complete mechanism): " << flow_complete.flamespeed << " m/s"
-            << std::endl;
+  std::cout << "Flame speed (complete mechanism): " << flow_complete.flamespeed
+            << " m/s" << std::endl;
   std::cout << "Adiabatic flame temperature (complete mechanism): "
             << flow_complete.Tad << " K" << std::endl;
   // Verify if file doesn't exist
@@ -97,37 +99,34 @@ int main(int argc, char **argv) {
     auto sol_complete =
         Cantera::newSolution("gri30.yaml", "gri30", "mixture-averaged");
 
-    double T_ad_complete = 0.0;
-    double T_max_complete = 0.0;
-    double flamespeed_complete = 0.0;
+    thermo_state flow_complete;
     try {
-      flamespeed_complete =
-          flamespeed(sol_complete, temperature, pressure, uin,
-                     mixture_fraction / 100.0, fuel, oxidizer, refine_grid,
-                     loglevel, Reactions);
+      flow_complete = flamespeed(sol_complete, temperature, pressure, uin,
+                                 mixture_fraction / 100.0, fuel, oxidizer,
+                                 refine_grid, loglevel, Reactions);
     } catch (Cantera::CanteraError &err) {
       std::cout << err.what() << std::endl;
-      flamespeed_complete = -1.0;
+      flow_complete = {-1.0, -1.0, -1.0, -1.0};
     }
 
     auto sol_reduced = Cantera::newSolution(
         "/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml",
         "gri30", "mixture-averaged");
 
-    thermo
+    thermo_state flow_reduced;
     try {
-      flamespeed_reduced =
-          flamespeed(sol_reduced, temperature, pressure, uin,
-                     mixture_fraction / 100.0, fuel, oxidizer, refine_grid,
-                     loglevel, Reactions);
+      flow_reduced = flamespeed(sol_reduced, temperature, pressure, uin,
+                                mixture_fraction / 100.0, fuel, oxidizer,
+                                refine_grid, loglevel, Reactions);
     } catch (Cantera::CanteraError &err) {
       std::cout << err.what() << std::endl;
-      flamespeed_reduced = -1.0;
+      flow_reduced = {-1.0, -1.0, -1.0, -1.0};
     }
 
-    results.push_back({mixture_fraction / 100.0, flamespeed_reduced,
-                       T_ad_reduced, T_max_reduced, flamespeed_complete,
-                       T_ad_complete, T_max_complete});
+    results.push_back({mixture_fraction / 100.0, flow_reduced.flamespeed,
+                       flow_reduced.Tad, flow_reduced.Tmax, flow_reduced.zmax,
+                       flow_complete.flamespeed, flow_complete.Tad,
+                       flow_complete.Tmax, flow_complete.zmax});
   }
 
   std::ofstream out_data(
@@ -135,17 +134,41 @@ int main(int argc, char **argv) {
   out_data << "Mixture fraction, Flame Speed (reduced mechanism) [m/s], "
               "Adiabatic flame temperature (reduced mechanism) [K], "
               "Maximum temperature (reduced mechanism) [K], "
+              "Z_max (reduced mechanism) [m], "
               "Flame Speed (complete mechanism) [m/s], "
               "Adiabatic flame temperature (complete mechanism) [K], "
-              "Maximum temperature (complete mechanism) [K]\n";
+              "Maximum temperature (complete mechanism) [K], "
+              "Z_max (complete mechanism) [m]\n";
   for (auto r : results) {
     out_data << r.ratio_fuel_ox << "," << r.speed_flame_reduced << ","
              << r.temperature_ad_reduced << "," << r.temperature_max_reduced
-             << "," << r.speed_flame_full << "," << r.temperature_ad_full << ","
-             << r.temperature_max_full << "\n";
+             << "," << r.z_t_max_reduced << "," << r.speed_flame_full << ","
+             << r.temperature_ad_full << "," << r.temperature_max_full << ","
+             << r.z_t_max_full << "\n";
   }
 
   std::cout << "Data written to flame_speed_data.csv" << std::endl;
 
+  // Using gnuplot to plot the data
+  std::ofstream gp("plot_flame_speed.gp");
+  gp << "set terminal pngcairo size 800,600\n";
+  gp << "set output 'flame_speed_comparison.png'\n";
+  gp << "set title 'Flame Speed Comparison'\n";
+  gp << "set xlabel 'Mixture Fraction'\n";
+  gp << "set ylabel 'Flame Speed (m/s)'\n";
+  gp << "set grid\n";
+  gp << "set key outside\n";
+  gp << "plot 'flame_speed_data.csv' using 1:2 with lines title 'Reduced Mechanism', \\\n";
+  gp << "     '' using 1:6 with lines title 'Complete Mechanism'\n";
+  gp.close();
+  std::system("gnuplot plot_flame_speed.gp");
+  std::cout << "Plot generated: flame_speed_comparison.png" << std::endl;
+
+  std::ofstream gp_temp("plot_temperature.gp");
+  gp_temp << "set terminal pngcairo size 800,600\n";
+  gp_temp << "set output 'temperature_comparison.png'\n";
+  gp_temp << "set title 'Adiabatic Flame Temperature Comparison'\n";
+  gp_temp << "set xlabel 'Mixture Fraction'\n";
+  gp_temp << "set ylabel 'Temperature (K)'\n";
   return 0;
 }
