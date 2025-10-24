@@ -17,169 +17,164 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at https://cantera.org/license.txt for license and copyright information.
 
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #include "cantera/base/stringUtils.h"
 #include "cantera/kinetics/Reaction.h"
 #include "cantera/oneD/DomainFactory.h"
 #include "cantera/onedim.h"
 #include "cantera/thermo/Species.h"
 #include "cantera/transport/TransportData.h"
-
-#include <algorithm>
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <utility>
-
+#include "imgui.h"
+#include "implot.h"
 #include "lib.h"
-#include <vector>
 
-int main(int argc, char **argv) {
+struct output {
+  double ratio_fuel_ox;
+  double speed_flame_reduced;
+  double temperature_ad_reduced;
+  double temperature_max_reduced;
+  double z_t_max_reduced;
+  double speed_flame_full;
+  double temperature_ad_full;
+  double temperature_max_full;
+  double z_t_max_full;
+};
 
-  Cantera::suppress_deprecation_warnings();
-  Cantera::suppress_thermo_warnings(true);
+int main(int argc, char** argv) {
+  int loglevel         = 0;
+  bool refine_grid     = true;
+  auto tolerance_speed = 0.01;  // m/s
 
-  // Cantera::Application::Instance()->suppress_warnings();
-  // Cantera::Application::Instance()->suppress_deprecation_warnings();
+  auto phi             = 1.0;
+  auto fuel            = "CH4";
+  auto oxidizer        = "O2:0.21,N2:0.79";
 
-  double phi = 1.0;
-  int loglevel = 0;
-  bool refine_grid = true;
-  auto tolerance_speed = 0.01; // m/s
+  auto sol_complete    = Cantera::newSolution("gri30.yaml", "gri30", "mixture-averaged");
 
+  auto gas             = sol_complete->thermo();
+  gas->setEquivalenceRatio(phi, fuel, oxidizer);
+
+  auto mixture_fraction_stoichiometric = gas->mixtureFraction(fuel, oxidizer);
+
+  double temperature                   = 300.0;                  // K
+  double pressure                      = 1.0 * Cantera::OneAtm;  // atm
+  double uin                           = 0.3;                    // m/sec
   std::multimap<std::string, std::pair<std::string, double>> Reactions;
 
-  auto sol_complete =
-      Cantera::newSolution("gri30.yaml", "gri30", "mixture-averaged");
+  auto flow_complete = flamespeed(sol_complete,
+                                  temperature,
+                                  pressure,
+                                  uin,
+                                  mixture_fraction_stoichiometric,
+                                  fuel,
+                                  oxidizer,
+                                  refine_grid,
+                                  loglevel,
+                                  Reactions);
 
-  double temperature = 300.0;              // K
-  double pressure = 1.0 * Cantera::OneAtm; // atm
-  double uin = 0.3;                        // m/sec
-  auto flame_speed_baseline =
-      flamespeed(sol_complete, temperature, pressure, uin, phi, refine_grid,
-                 loglevel, Reactions);
+  std::cout << "Flame speed (complete mechanism): " << flow_complete.flamespeed << " m/s"
+            << std::endl;
+  std::cout << "Adiabatic flame temperature (complete mechanism): " << flow_complete.Tad << " K"
+            << std::endl;
+  // Verify if file doesn't exist
+  if (!std::filesystem::exists("/home/Shinmen/Workspace "
+                               "Cloud/flame-speed/modified_mechanism.yaml")) {
+    auto rootNode = mechanism_reduction(sol_complete,
+                                        tolerance_speed,
+                                        flamespeed,
+                                        temperature,
+                                        pressure,
+                                        uin,
+                                        mixture_fraction_stoichiometric,
+                                        fuel,
+                                        oxidizer,
+                                        refine_grid,
+                                        loglevel);
 
-  std::cout << "\nVelocidade da chama: " << flame_speed_baseline << " m/s\n";
-
-  // std::sort(Reactions.begin(), Reactions.end(),
-  //           [](const auto &a, const auto &b) { return a.first > b.first; });
-  // for (const auto &item : Reactions) {
-  //   std::cout << "Rate: " << item.first
-  //             << "  Reaction: " << item.second->equation() << "\n";
-  // }
-
-  // how to get phase definition from existing Solution object
-  // TODO: maybe pick direct from gri30.yaml instead? need test
-  auto phaseNode = sol_complete->thermo()->input();
-
-  std::vector<Cantera::AnyMap> species;
-  for (size_t i = 0; i < sol_complete->thermo()->nSpecies(); i++) {
-    auto sp = sol_complete->thermo()->species(i);
-    Cantera::AnyMap sp_data = sp->parameters();
-
-    std::string gambiarra_para_forçar_o_any_map_no_formato_certo =
-        sp_data.toYamlString();
-
-    Cantera::AnyMap sp_data_map = Cantera::AnyMap::fromYamlString(
-        gambiarra_para_forçar_o_any_map_no_formato_certo);
-    species.push_back(sp_data_map);
-  }
-
-  // std::vector<Cantera::AnyMap> reactionDefs;
-  // for (size_t i = 0; i < sol_complete->kinetics()->nReactions(); i++) {
-  //   auto rxn = sol_complete->kinetics()->reaction(i);
-  //   Cantera::AnyMap rxn_data = rxn->input;
-  //   reactionDefs.push_back(rxn_data);
-  // }
-
-  auto flame_speed_new = flame_speed_baseline;
-
-  Cantera::AnyMap rootNode;
-
-  while (std::abs(flame_speed_new - flame_speed_baseline) < tolerance_speed) {
-
-    std::cout << "\nReaction with less weight:\n";
-    auto min_reaction = std::min_element(
-        Reactions.begin(), Reactions.end(), [](const auto &a, const auto &b) {
-          return a.second.second < b.second.second;
-        });
-
-    // Remove the reaction from the list of reaction definitions
-    if (min_reaction != Reactions.end()) {
-      std::cout << "Rate: " << min_reaction->second.second
-                << "  Reaction: " << min_reaction->second.first << "\n";
-
-      if (Reactions.count(min_reaction->first) == 2) {
-        auto equation = min_reaction->first;
-
-        Reactions.erase(min_reaction);
-
-        // remove só uma das duas
-        auto min_duplicate = Reactions.find(equation);
-
-        // std::cout << "Modifying duplicate reaction:\n";
-        // std::cout << min_duplicate->second.first << "\n";
-
-        Cantera::AnyMap rxn_data =
-            Cantera::AnyMap::fromYamlString(min_duplicate->second.first);
-        // rxn_data["duplicate"] = false;
-        rxn_data.erase("duplicate");
-
-        // std::cout << rxn_data.toYamlString() << "\n";
-
-        min_duplicate->second.first = rxn_data.toYamlString();
-      } else {
-        Reactions.erase(min_reaction);
-      }
-    }
-
-    std::vector<Cantera::AnyMap> reactionDefs;
-    for (auto rxn : Reactions) {
-      Cantera::AnyMap rxn_data =
-          Cantera::AnyMap::fromYamlString(rxn.second.first);
-
-      reactionDefs.push_back(rxn_data);
-    }
-
-    // auto new_sol =
-    //     modified_solution(phaseNode, species, reactionDefs, "mixture-averaged");
-    rootNode = mechanism_map(phaseNode, species, reactionDefs);
-
-    // std::ofstream out(
-    //     "/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml");
-    // out << rootNode.toYamlString();
-
-    std::string santa_gambiarra =
-        rootNode.toYamlString(); // para forçar o formato certo
-    // const auto originalName = phaseNode.at("name").asString();
-
-    // Cantera::AnyMap modifiedPhase = phaseNode;
-    // const auto newName = originalName;
-    // modifiedPhase["name"] = newName;
-    // write to file
-    std::ofstream out(
-        "/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml");
+    std::ofstream out("/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml");
     out << rootNode.toYamlString();
-
-    const Cantera::AnyMap &phaseNode_new =
-        rootNode.at("phases").getMapWhere("name", "gri30");
-
-    auto sol_new =
-        Cantera::newSolution(phaseNode_new, rootNode, "mixture-averaged");
-
-    flame_speed_new = flamespeed(sol_new, temperature, pressure, uin, phi,
-                                 refine_grid, loglevel, Reactions);
-
-    std::cout << "\nVelocidade da chama (novo mecanismo): " << flame_speed_new
-              << " m/s\n";
-    std::cout << "Reactions remaining: " << sol_new->kinetics()->nReactions()
-              << "\n";
   }
 
-  // write to file
-  std::ofstream out(
-      "/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml");
-  out << rootNode.toYamlString();
+  std::vector<output> results;
+
+  for (auto mixture_fraction = 0; mixture_fraction <= 100; mixture_fraction++) {
+    auto sol_complete          = Cantera::newSolution("gri30.yaml", "gri30", "mixture-averaged");
+
+    thermo_state flow_complete = {-1.0, -1.0, -1.0, -1.0};
+    try {
+      flow_complete = flamespeed(sol_complete,
+                                 temperature,
+                                 pressure,
+                                 uin,
+                                 mixture_fraction / 100.0,
+                                 fuel,
+                                 oxidizer,
+                                 refine_grid,
+                                 loglevel);
+    } catch (Cantera::CanteraError& err) {
+      std::cout << err.what() << std::endl;
+      flow_complete = {-1.0, -1.0, -1.0, -1.0};
+    }
+
+    auto sol_reduced =
+        Cantera::newSolution("/home/Shinmen/Workspace Cloud/flame-speed/modified_mechanism.yaml",
+                             "gri30",
+                             "mixture-averaged");
+
+    thermo_state flow_reduced = {-1.0, -1.0, -1.0, -1.0};
+    try {
+      flow_reduced = flamespeed(sol_reduced,
+                                temperature,
+                                pressure,
+                                uin,
+                                mixture_fraction / 100.0,
+                                fuel,
+                                oxidizer,
+                                refine_grid,
+                                loglevel);
+    } catch (Cantera::CanteraError& err) {
+      std::cout << err.what() << std::endl;
+      flow_reduced = {-1.0, -1.0, -1.0, -1.0};
+    }
+
+    results.push_back({mixture_fraction / 100.0,
+                       flow_reduced.flamespeed,
+                       flow_reduced.Tad,
+                       flow_reduced.Tmax,
+                       flow_reduced.zmax,
+                       flow_complete.flamespeed,
+                       flow_complete.Tad,
+                       flow_complete.Tmax,
+                       flow_complete.zmax});
+  }
+
+  std::ofstream out_data("/home/Shinmen/Workspace Cloud/flame-speed/flame_speed_data.csv");
+  out_data << "Mixture fraction, Equivalence ratio (reduced mechanism), "
+              "Flame Speed (reduced mechanism) [m/s], "
+              "Adiabatic flame temperature (reduced mechanism) [K], "
+              "Maximum temperature (reduced mechanism) [K], "
+              "Z_max (reduced mechanism) [m], "
+              "Flame Speed (complete mechanism) [m/s], "
+              "Adiabatic flame temperature (complete mechanism) [K], "
+              "Maximum temperature (complete mechanism) [K], "
+              "Z_max (complete mechanism) [m]\n";
+  for (auto r : results) {
+    auto new_phi = r.ratio_fuel_ox / (mixture_fraction_stoichiometric);
+    out_data << r.ratio_fuel_ox << "," << new_phi << "," << r.speed_flame_reduced << ","
+             << r.temperature_ad_reduced << "," << r.temperature_max_reduced << ","
+             << r.z_t_max_reduced << "," << r.speed_flame_full << "," << r.temperature_ad_full
+             << "," << r.temperature_max_full << "," << r.z_t_max_full << "\n";
+  }
+
+  std::cout << "Data written to flame_speed_data.csv" << std::endl;
 
   return 0;
 }

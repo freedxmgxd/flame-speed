@@ -32,3 +32,4 @@ canal_base/system/meshDict*
 
 # Module cache
 MODULE.bazel.lock
+.clang-format
