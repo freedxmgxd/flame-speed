@@ -1,0 +1,14 @@
+ignition
+{
+    type            fixedTemperatureConstraint;
+    active          true;
+    selectionMode   cellSet;
+    cellSet         ignitionZone; // Definido no topoSet
+    
+    // Rampa temporal para suavizar a "pancada" acústica
+    timeStart       0;
+    duration        0.3; 
+    
+    mode            uniform;
+    temperature     constant 2200; 
+}

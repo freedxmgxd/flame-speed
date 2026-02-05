@@ -12,7 +12,7 @@ cc_binary(
     name = "main",
     srcs = ["main.cpp"],
     copts = [
-        "-std=c++17",
+        "-std=c++23",
     ],
     linkopts = [
         "-pthread",
@@ -21,4 +21,15 @@ cc_binary(
         "-lpthread"
     ],
     deps = [":lib"],
+)
+
+cc_binary(
+    name = "generate_cfd",
+    srcs = ["generate_cfd.cpp"],
+    copts = [
+        "-std=c++23",
+    ],
+    linkopts = [
+
+    ]
 )
