@@ -13,13 +13,13 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-ignitionCells
+ignitionZone
 {
     type        sphere;
     zoneType    cell;
 
     centre      (0.147 0 0);
-    radius      0.005;
+    radius      0.010;
 }
 
 // ************************************************************************* //

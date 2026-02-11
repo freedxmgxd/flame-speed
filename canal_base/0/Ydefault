@@ -31,21 +31,21 @@ boundaryField
     {
         type            zeroGradient;
     }
-    symmetry
-    {
-        type            symmetryPlane;
-    }
-    walls
+    canal_wall
     {
         type            zeroGradient;
     }
-    front
+    step
+    {
+        type            zeroGradient;
+    }
+    plane_symmetry_z
     {
         type            symmetryPlane;
     }
-    back
+    plane_symmetry_y
     {
-        type            zeroGradient;
+        type            symmetryPlane;
     }
 }
 

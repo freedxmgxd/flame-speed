@@ -28,24 +28,24 @@ boundaryField
     }
     outlet
     {
-        type            totalPressure;
-        p0              $internalField;
+        type            fixedValue;
+        value           uniform 1e5;
     }
-    symmetry
-    {
-        type            symmetryPlane;
-    }
-    walls
+    canal_wall
     {
         type            zeroGradient;
     }
-    front
+    step
+    {
+        type            zeroGradient;
+    }
+    plane_symmetry_z
     {
         type            symmetryPlane;
     }
-    back
+    plane_symmetry_y
     {
-        type            zeroGradient;
+        type            symmetryPlane;
     }
 }
 

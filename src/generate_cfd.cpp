@@ -3,9 +3,39 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <set>
 #include <string>
+
+// Função auxiliar para substituir variáveis em um arquivo
+void replaceInFile(const std::string& filePath, const std::map<std::string, std::string>& replacements) {
+  std::ifstream inputFile(filePath);
+  if (!inputFile.is_open()) {
+    std::cerr << "Erro: Não foi possível abrir o arquivo: " << filePath << std::endl;
+    return;
+  }
+
+  std::string content((std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>());
+  inputFile.close();
+
+  for (const auto& [placeholder, value] : replacements) {
+    size_t pos = 0;
+    while ((pos = content.find(placeholder, pos)) != std::string::npos) {
+      content.replace(pos, placeholder.length(), value);
+      pos += value.length();
+    }
+  }
+
+  std::ofstream outputFile(filePath);
+  if (!outputFile.is_open()) {
+    std::cerr << "Erro: Não foi possível escrever no arquivo: " << filePath << std::endl;
+    return;
+  }
+
+  outputFile << content;
+  outputFile.close();
+}
 
 int main(int argc, char** argv) {
   auto height_channel   = 2.0;    // mm (Altura do canal)
@@ -16,17 +46,23 @@ int main(int argc, char** argv) {
   auto width_outlet     = 63.2;   // mm (Largura saída)
   auto height_channel_half = height_channel * 0.5;
 
-  auto min_cell_size = 0.37 * 2.0;  // mm (menor comprimento de célula)
+  auto min_cell_size = 0.37 * 5.0;  // mm (menor comprimento de célula)
+
+  auto velocity_inlet = 0.5;  // m/s (Velocidade de entrada)'
+
+  auto time_cold_flow = ((length_inlet + length_expansion + length_outlet) * 0.001) / velocity_inlet;  // Tempo total de simulação (s)
+
+  auto time_simulation = time_cold_flow + 2.0;  // Tempo total de simulação (s)
 
   // Keep dx continuous across blocks by scaling cell counts with length.
   const auto dx_ref        = min_cell_size;
-  auto n_cells_x_inlet  = std::max(1, static_cast<int>(std::lround(length_inlet / dx_ref)));
-  auto n_cells_x_expansion = std::max(1, static_cast<int>(std::lround(length_expansion / dx_ref)));
-  auto n_cells_x_outlet    = std::max(1, static_cast<int>(std::lround(length_outlet / dx_ref)));
+  auto n_cells_x_inlet  = std::max(2, static_cast<int>(std::lround(length_inlet / dx_ref)));
+  auto n_cells_x_expansion = std::max(2, static_cast<int>(std::lround(length_expansion / dx_ref)));
+  auto n_cells_x_outlet    = std::max(2, static_cast<int>(std::lround(length_outlet / dx_ref)));
 
   // // Keep dy/dz close to dx at the inlet half-width and full height.
-  auto n_cells_y = std::max(1, static_cast<int>(std::lround((width_inlet * 0.5) / dx_ref)));
-  auto n_cells_z = std::max(1, static_cast<int>(std::lround(height_channel_half / dx_ref)));
+  auto n_cells_y = std::max(2, static_cast<int>(std::lround((width_inlet * 0.5) / dx_ref)));
+  auto n_cells_z = std::max(2, static_cast<int>(std::lround(height_channel_half / dx_ref)));
 
 
   std::string vertices[26] = {
@@ -248,6 +284,49 @@ int main(int argc, char** argv) {
   // Delete temporary Y_temp file
   std::string Y_temp_filePath = dirPath + "/0/Y_temp";
   std::filesystem::remove(Y_temp_filePath);
+
+  // ===== Substituições no controlDict e U =====
+  // Preparar formato de tempo e velocidade para substituição
+  std::string time_simulation_str = std::to_string(time_simulation);
+  // Remove trailing zeros after decimal point
+  time_simulation_str.erase(time_simulation_str.find_last_not_of('0') + 1, std::string::npos);
+  if (time_simulation_str.back() == '.') {
+    time_simulation_str.pop_back();
+  }
+
+  std::string time_cold_flow_str = std::to_string(time_cold_flow);
+  time_cold_flow_str.erase(time_cold_flow_str.find_last_not_of('0') + 1, std::string::npos);
+  if (time_cold_flow_str.back() == '.') {
+    time_cold_flow_str.pop_back();
+  }
+
+  std::string velocity_inlet_str = std::to_string(velocity_inlet);
+  velocity_inlet_str.erase(velocity_inlet_str.find_last_not_of('0') + 1, std::string::npos);
+  if (velocity_inlet_str.back() == '.') {
+    velocity_inlet_str.pop_back();
+  }
+  velocity_inlet_str = "(" + velocity_inlet_str + " 0 0)";  // Formato para arquivo U
+
+  // Substituir no controlDict
+  std::string controlDictPath = dirPath + "/system/controlDict";
+  std::map<std::string, std::string> controlDictReplacements = {
+      {"${time_simulation}", time_simulation_str}
+  };
+  replaceInFile(controlDictPath, controlDictReplacements);
+
+  // Substituir no arquivo U (velocidade inicial)
+  std::string U_filePath = dirPath + "/0/U";
+  std::map<std::string, std::string> U_replacements = {
+      {"${velocity_inlet}", velocity_inlet_str}
+  };
+  replaceInFile(U_filePath, U_replacements);
+
+  // Substituir no fvModels (tempo de inicio da ignicao)
+  std::string fvModelsPath = dirPath + "/constant/fvModels";
+  std::map<std::string, std::string> fvModelsReplacements = {
+      {"${time_start_ignition}", time_cold_flow_str}
+  };
+  replaceInFile(fvModelsPath, fvModelsReplacements);
 
   // TODO: implementar uma forma de executar o script do OpenFOAM
 

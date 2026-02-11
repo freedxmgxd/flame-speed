@@ -19,16 +19,18 @@ reader = OpenFOAMReader(registrationName='simulation.foam', FileName='simulation
 reader.MeshRegions = ['internalMesh']
 reader.CellArrays = ['CH4', 'CO2', 'H2O', 'N2', 'O2', 'Qdot', 'T', 'U', 'p', 'rho']
 
-# Ensure last time is loaded
+# Ensure current time is used (do not force last time)
 animation_scene = GetAnimationScene()
 animation_scene.UpdateAnimationUsingDataTimeSteps()
-animation_scene.GoToLast()
+time_keeper = GetTimeKeeper()
+current_time = time_keeper.Time
+reader.UpdatePipeline(current_time)
 
 # -----------------------------------------------------------------------------
 # Sample cell centers to compute profiles along x
 # -----------------------------------------------------------------------------
 cell_centers = CellCenters(Input=reader)
-cell_centers.UpdatePipeline()
+cell_centers.UpdatePipeline(current_time)
 
 data = servermanager.Fetch(cell_centers)
 
@@ -128,6 +130,13 @@ u_lut = GetColorTransferFunction('U')
 render_display.ColorArrayName = ['CELLS', 'U']
 render_display.LookupTable = u_lut
 render_display.SetScalarBarVisibility(render_view, True)
+safe_set(transform, 'AddInputConnection', False)
+try:
+    transform_geometry = GetRepresentationProxy(render_view, transform)
+    if transform_geometry and hasattr(transform_geometry, 'ShowBox'):
+        transform_geometry.ShowBox = 0
+except Exception:
+    pass
 if hasattr(render_view, 'ResetCameraToNearest'):
     render_view.ResetCameraToNearest()
 else:
@@ -167,6 +176,45 @@ layout1.AssignView(2, chart_view_vel)
 
 layout2 = CreateLayout(name='Mass Fractions')
 layout2.AssignView(0, chart_view_frac)
+
+# ----
+# Nova aba: Highlights de velocidade 30-40 cm/s (0.3-0.4 m/s)
+# ----
+render_view_highlight = CreateView('RenderView')
+render_view_highlight.Set(ViewSize=[1200, 600])
+
+transform_highlight = Transform(Input=reader)
+transform_highlight.Transform.Scale = [1.0, 1.0, -1.0]
+
+# Criar filtro de threshold para destacar velocidades entre 0.3 e 0.4 m/s
+threshold_filter = Threshold(Input=transform_highlight)
+threshold_filter.Scalars = ['CELLS', 'U']
+threshold_filter.ThresholdMethod = 'Between'
+threshold_filter.LowerThreshold = 0.3
+threshold_filter.UpperThreshold = 0.4
+
+highlight_display = Show(threshold_filter, render_view_highlight)
+highlight_display.Representation = 'Surface'
+highlight_lut = GetColorTransferFunction('U')
+highlight_display.ColorArrayName = ['CELLS', 'U']
+highlight_display.LookupTable = highlight_lut
+highlight_display.SetScalarBarVisibility(render_view_highlight, True)
+
+# Adicionar geometria completa do canal como referência (wireframe)
+complete_geometry = Show(transform_highlight, render_view_highlight)
+complete_geometry.Representation = 'Wireframe'
+complete_geometry.LineWidth = 0.5
+complete_geometry.Opacity = 0.3
+
+if hasattr(render_view_highlight, 'ResetCameraToNearest'):
+    render_view_highlight.ResetCameraToNearest()
+else:
+    render_view_highlight.ResetCamera()
+    camera = render_view_highlight.GetActiveCamera()
+    camera.Dolly(1.5)
+
+layout3 = CreateLayout(name='Velocity Highlights 30-40cm/s')
+layout3.AssignView(0, render_view_highlight)
 
 SetActiveView(chart_view_vel)
 RenderAllViews()

@@ -16,13 +16,13 @@ FoamFile
 
 solver          multicomponentFluid;
 
-startFrom       startTime;
+startFrom       latestTime;
 
 startTime       0;
 
 stopAt          endTime;
 
-endTime         1.0;
+endTime         ${time_simulation};
 
 deltaT          1e-6;
 
@@ -47,6 +47,4 @@ runTimeModifiable true;
 adjustTimeStep  yes;
 
 maxCo           0.5;
-
-maxAlphaCo      0.5;
 // ************************************************************************* //

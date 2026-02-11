@@ -1,14 +1,33 @@
-ignition
+FoamFile
 {
-    type            fixedTemperatureConstraint;
-    active          true;
-    selectionMode   cellSet;
-    cellSet         ignitionZone; // Definido no topoSet
-    
-    // Rampa temporal para suavizar a "pancada" acústica
-    timeStart       0;
-    duration        0.3; 
-    
-    mode            uniform;
-    temperature     constant 2200; 
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvModels;
 }
+
+// Definição da Fonte de Ignição
+sparkIgnition
+{
+    // Tipo específico para adição de energia térmica
+    type            heatSource;
+    
+    // Controle de ativação global
+    active          on;
+
+    // Seleção da região geométrica criada pelo topoSet
+    selectionMode   cellZone;
+    cellZone        ignitionZone;
+
+    // Parametrização da Energia com Controle Temporal
+    // Densidade de Potência Volumétrica (W/m³) com squarePulse
+    Q
+    {
+        type        squarePulse;
+        start       ${time_start_ignition};   // Início da ignição
+        duration    0.020;                     // Duração de 20ms
+        value       0;                         // Valor desligado
+        scale       0.5;                     // Valor ligado (W/m³)
+    } 
+}
+

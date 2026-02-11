@@ -15,12 +15,12 @@ set -e
 # Gera malha e checa
 blockMesh
 checkMesh
-
+createZones
 
 decomposePar -force
 mpirun -np 16 --oversubscribe foamRun -parallel || true
 reconstructPar
 
 # Abre no ParaView
-paraview.exe paraview_x_profiles.py
+paraview.exe paraview_x_profiles.py &
 echo "OK"
