@@ -953,10 +953,6 @@ reactions:
     efficiencies: {H2: 2.0, H2O: 6.0, CH4: 2.0, CO: 1.5, CO2: 2.0, C2H6: 3.0, AR: 0.7}
   - equation: 2 OH <=> O + H2O
     rate-constant: {A: 3.57e+04, b: 2.4, Ea: -2110.0}
-  - equation: C + O2 <=> O + CO
-    rate-constant: {A: 5.8e+13, b: 0.0, Ea: 576.0}
-  - equation: C2H + O2 <=> HCO + CO
-    rate-constant: {A: 1.0e+13, b: 0.0, Ea: -755.0}
   - equation: H + C2H2 (+M) <=> C2H3 (+M)
     type: falloff
     low-P-rate-constant: {A: 3.8e+40, b: -7.27, Ea: 7220.0}
@@ -967,8 +963,6 @@ reactions:
     rate-constant: {A: 1.35e+07, b: 2.0, Ea: 1900.0}
   - equation: C2H3 + O2 <=> O + CH2CHO
     rate-constant: {A: 3.03e+11, b: 0.29, Ea: 11.0}
-  - equation: C2H3 + O2 <=> HCO + CH2O
-    rate-constant: {A: 4.58e+16, b: -1.39, Ea: 1015.0}
   - equation: H + C2H4 (+M) <=> C2H5 (+M)
     type: falloff
     low-P-rate-constant: {A: 6.0e+41, b: -7.62, Ea: 6970.0}
@@ -979,8 +973,6 @@ reactions:
     rate-constant: {A: 1.325e+06, b: 2.53, Ea: 1.224e+04}
   - equation: OH + C2H4 <=> C2H3 + H2O
     rate-constant: {A: 3.6e+06, b: 2.0, Ea: 2500.0}
-  - equation: O + C2H5 <=> H + CH3CHO
-    rate-constant: {A: 1.096e+14, b: 0.0, Ea: 0.0}
   - equation: C2H5 + O2 <=> HO2 + C2H4
     rate-constant: {A: 8.4e+11, b: 0.0, Ea: 3875.0}
   - equation: H + C2H6 <=> C2H5 + H2
@@ -989,8 +981,6 @@ reactions:
     rate-constant: {A: 8.98e+07, b: 1.92, Ea: 5690.0}
   - equation: OH + C2H6 <=> C2H5 + H2O
     rate-constant: {A: 3.54e+06, b: 2.12, Ea: 870.0}
-  - equation: CH + CH4 <=> H + C2H4
-    rate-constant: {A: 6.0e+13, b: 0.0, Ea: 0.0}
   - equation: CH + H2 <=> H + CH2
     rate-constant: {A: 1.08e+14, b: 0.0, Ea: 3110.0}
   - equation: CH + H2O <=> H + CH2O
@@ -1007,8 +997,6 @@ reactions:
     rate-constant: {A: 5.0e+12, b: 0.0, Ea: 1500.0}
   - equation: CH2 + O2 => 2 H + CO2
     rate-constant: {A: 5.8e+12, b: 0.0, Ea: 1500.0}
-  - equation: CH2(S) + CH4 <=> 2 CH3
-    rate-constant: {A: 1.6e+13, b: 0.0, Ea: -570.0}
   - equation: CH2(S) + H2 <=> CH3 + H
     rate-constant: {A: 7.0e+13, b: 0.0, Ea: 0.0}
   - equation: CH2(S) + H2O <=> CH2 + H2O
@@ -1021,8 +1009,6 @@ reactions:
     rate-constant: {A: 1.2e+13, b: 0.0, Ea: 0.0}
   - equation: O2 + CH2CHO => OH + 2 HCO
     rate-constant: {A: 2.35e+10, b: 0.0, Ea: 0.0}
-  - equation: O2 + CH2CHO => OH + CO + CH2O
-    rate-constant: {A: 1.81e+10, b: 0.0, Ea: 0.0}
   - equation: H + CH2CO (+M) <=> CH2CHO (+M)
     type: falloff
     low-P-rate-constant: {A: 1.012e+42, b: -7.63, Ea: 3854.0}
@@ -1089,8 +1075,6 @@ reactions:
     rate-constant: {A: 1.02e+09, b: 1.5, Ea: 8600.0}
   - equation: OH + CH4 <=> CH3 + H2O
     rate-constant: {A: 1.0e+08, b: 1.6, Ea: 3120.0}
-  - equation: CN + O2 <=> NCO + O
-    rate-constant: {A: 6.14e+12, b: 0.0, Ea: -440.0}
   - equation: O + CO (+M) <=> CO2 (+M)
     type: falloff
     low-P-rate-constant: {A: 6.02e+14, b: 0.0, Ea: 3000.0}
@@ -1101,14 +1085,18 @@ reactions:
     rate-constant: {A: 4.76e+07, b: 1.228, Ea: 70.0}
   - equation: N + CO2 <=> NO + CO
     rate-constant: {A: 3.0e+12, b: 0.0, Ea: 1.13e+04}
+  - equation: H + HCCO <=> CH2(S) + CO
+    rate-constant: {A: 1.0e+14, b: 0.0, Ea: 0.0}
   - equation: H + HCO <=> H2 + CO
     rate-constant: {A: 7.34e+13, b: 0.0, Ea: 0.0}
   - equation: H + HO2 <=> 2 OH
     rate-constant: {A: 8.4e+13, b: 0.0, Ea: 635.0}
   - equation: H + HO2 <=> O2 + H2
     rate-constant: {A: 4.48e+13, b: 0.0, Ea: 1068.0}
-  - equation: H + HO2 <=> O + H2O
-    rate-constant: {A: 3.97e+12, b: 0.0, Ea: 671.0}
+  - equation: H + NO + M <=> HNO + M
+    type: three-body
+    rate-constant: {A: 4.48e+19, b: -1.32, Ea: 740.0}
+    efficiencies: {H2: 2.0, H2O: 6.0, CH4: 2.0, CO: 1.5, CO2: 2.0, C2H6: 3.0, AR: 0.7}
   - equation: H + O2 + H2O <=> HO2 + H2O
     rate-constant: {A: 1.126e+19, b: -0.76, Ea: 0.0}
   - equation: H + O2 + M <=> HO2 + M
@@ -1129,12 +1117,10 @@ reactions:
     rate-constant: {A: 3.87e+04, b: 2.7, Ea: 6260.0}
   - equation: OH + H2 <=> H + H2O
     rate-constant: {A: 2.16e+08, b: 1.51, Ea: 3430.0}
+  - equation: NH + H2O <=> HNO + H2
+    rate-constant: {A: 2.0e+13, b: 0.0, Ea: 1.385e+04}
   - equation: OH + H2O2 <=> HO2 + H2O
     rate-constant: {A: 1.7e+18, b: 0.0, Ea: 2.941e+04}
-  - equation: HCCO + O2 <=> OH + 2 CO
-    rate-constant: {A: 3.2e+12, b: 0.0, Ea: 854.0}
-  - equation: HCNN + O2 <=> O + HCO + N2
-    rate-constant: {A: 1.2e+13, b: 0.0, Ea: 0.0}
   - equation: HCO + H2O <=> H + CO + H2O
     rate-constant: {A: 1.5e+18, b: -1.0, Ea: 1.7e+04}
   - equation: HCO + M <=> H + CO + M
@@ -1159,7 +1145,14 @@ reactions:
     rate-constant: {A: 9.0e+09, b: 1.0, Ea: 6500.0}
   - equation: N + OH <=> NO + H
     rate-constant: {A: 3.36e+13, b: 0.0, Ea: 385.0}
-  - equation: NH + O2 <=> NO + OH
-    rate-constant: {A: 1.28e+06, b: 1.5, Ea: 100.0}
-  - equation: NNH <=> N2 + H
-    rate-constant: {A: 3.3e+08, b: 0.0, Ea: 0.0}
+  - equation: N2O (+M) <=> N2 + O (+M)
+    type: falloff
+    low-P-rate-constant: {A: 6.37e+14, b: 0.0, Ea: 5.664e+04}
+    high-P-rate-constant: {A: 7.91e+10, b: 0.0, Ea: 5.602e+04}
+    efficiencies: {H2: 2.0, H2O: 6.0, CH4: 2.0, CO: 1.5, CO2: 2.0, C2H6: 3.0, AR: 0.625}
+  - equation: NH + NO <=> N2O + H
+    rate-constant: {A: 3.65e+14, b: -0.45, Ea: 0.0}
+  - equation: NH + OH <=> HNO + H
+    rate-constant: {A: 2.0e+13, b: 0.0, Ea: 0.0}
+  - equation: NH + OH <=> N + H2O
+    rate-constant: {A: 2.0e+09, b: 1.2, Ea: 0.0}

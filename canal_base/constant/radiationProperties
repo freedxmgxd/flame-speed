@@ -9,25 +9,27 @@ FoamFile
 {
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      physicalProperties;
+    location    "constant/gas";
+    object      radiationProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-thermoType
+radiationModel  P1;
+
+solverFreq      1;
+
+absorptionEmissionModel constant;
+
+constantCoeffs
 {
-    type            heRhoThermo;
-    mixture         multicomponentMixture;
-    transport       sutherland;
-    thermo          janaf;
-    equationOfState perfectGas;
-    specie          specie;
-    energy          sensibleEnthalpy;
+    absorptivity    0.01;
+    emissivity      0.01;
+    E               0;
 }
 
+scatterModel    none;
 
-defaultSpecie N2;
+sootModel       none;
 
-#include "thermo.compressibleGas"
 
 // ************************************************************************* //

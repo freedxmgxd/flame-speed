@@ -10,13 +10,13 @@ FoamFile
     format      ascii;
     class       volScalarField;
     location    "0";
-    object      p;
+    object      nut;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [1 -1 -2 0 0 0 0];
+dimensions      [0 2 -1 0 0 0 0];
 
-internalField   uniform 1e5;
+internalField   uniform 0;
 
 boundaryField
 {
@@ -24,20 +24,23 @@ boundaryField
 
     inlet
     {
-        type            zeroGradient;
+        type            calculated;
+        value           $internalField;
     }
     outlet
     {
-        type            fixedValue;
-        value           uniform 1e5;
+        type            calculated;
+        value           $internalField;
     }
     canal_wall
     {
-        type            zeroGradient;
+        type            nutkWallFunction;
+        value           $internalField;
     }
     step
     {
-        type            zeroGradient;
+        type            calculated;
+        value           $internalField;
     }
     plane_symmetry_z
     {
@@ -46,11 +49,6 @@ boundaryField
     plane_symmetry_y
     {
         type            symmetryPlane;
-    }
-        ".*"
-    {
-        type            calculated;
-        value           $internalField;
     }
 }
 

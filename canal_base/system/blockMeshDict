@@ -109,7 +109,7 @@ boundary
     }
     step
     {
-        type wall;
+        type patch;
         faces
         (
             // Back do degrau (block 5)

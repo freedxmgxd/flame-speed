@@ -21,48 +21,64 @@ solvers
         solver          diagonal;
     }
 
-    p
+    p_rgh
     {
-        solver           PCG;
-        preconditioner   DIC;
-        tolerance        1e-6;
+        solver           GAMG;
+        smoother         GaussSeidel;
+        tolerance        1e-7;
+        relTol           0.01;
+    }
+
+    p_rghFinal
+    {
+        $p_rgh;
+        tolerance        1e-7;
+        relTol           0;
+    }
+
+    "(U|h|k|epsilon|Yi)"
+    {
+        solver           PBiCGStab;
+        preconditioner   DILU;
+        tolerance        1e-7;
         relTol           0.1;
     }
 
-    pFinal
+    "(U|h|k|epsilon|Yi)Final"
     {
-        $p;
-        tolerance        1e-6;
-        relTol           0.0;
+        $U;
+        tolerance        1e-7;
+        relTol           0;
     }
 
-    "(U|h|k|epsilon)"
+    G
     {
-        solver          PBiCGStab;
-        preconditioner  DILU;
-        tolerance       1e-6;
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-5;
         relTol          0.1;
     }
 
-    "(U|h|k|epsilon)Final"
+    GFinal
     {
-        $U;
+        $G;
         relTol          0;
-    }
-
-    "Yi.*"
-    {
-        $hFinal;
     }
 }
 
 PIMPLE
 {
-    momentumPredictor no;
-    nOuterCorrectors  1;
-    nCorrectors     2;
+    momentumPredictor   yes;
+    nCorrectors         2;
     nNonOrthogonalCorrectors 0;
 }
 
+relaxationFactors
+{
+    equations
+    {
+        ".*"            1;
+    }
+}
 
 // ************************************************************************* //

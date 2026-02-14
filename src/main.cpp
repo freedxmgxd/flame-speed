@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
   if (!std::filesystem::exists(output_dir + "/modified_mechanism.yaml")) {
     auto rootNode = mechanism_reduction(sol_complete,
                                         tolerance_speed,
+                                        20,    // maximum of 400 reactions
                                         0.001,  // 0.1% tolerance for reaction rates
                                         flamespeed,
                                         temperature,

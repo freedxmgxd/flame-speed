@@ -10,13 +10,13 @@ FoamFile
     format      ascii;
     class       volScalarField;
     location    "0";
-    object      p;
+    object      epsilon;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [1 -1 -2 0 0 0 0];
+dimensions      [energy/mass/time];
 
-internalField   uniform 1e5;
+internalField   uniform 3.60203e-06;
 
 boundaryField
 {
@@ -24,20 +24,26 @@ boundaryField
 
     inlet
     {
-        type            zeroGradient;
+        type            turbulentMixingLengthDissipationRateInlet;
+        mixingLength    0.1;
+        value           $internalField;
     }
     outlet
     {
-        type            fixedValue;
-        value           uniform 1e5;
+        type            inletOutlet;
+        value           $internalField;
+        inletValue      $internalField;
     }
     canal_wall
     {
-        type            zeroGradient;
+        type            epsilonWallFunction;
+        value           $internalField;
     }
     step
     {
-        type            zeroGradient;
+        type            inletOutlet;
+        value           $internalField;
+        inletValue      $internalField;
     }
     plane_symmetry_z
     {
@@ -46,11 +52,6 @@ boundaryField
     plane_symmetry_y
     {
         type            symmetryPlane;
-    }
-        ".*"
-    {
-        type            calculated;
-        value           $internalField;
     }
 }
 

@@ -8,26 +8,13 @@
 FoamFile
 {
     format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      physicalProperties;
+    class       uniformDimensionedVectorField;
+    object      g;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-thermoType
-{
-    type            heRhoThermo;
-    mixture         multicomponentMixture;
-    transport       sutherland;
-    thermo          janaf;
-    equationOfState perfectGas;
-    specie          specie;
-    energy          sensibleEnthalpy;
-}
+dimensions      [0 1 -2 0 0 0 0];
 
-
-defaultSpecie N2;
-
-#include "thermo.compressibleGas"
+value           (0 0 0);
 
 // ************************************************************************* //

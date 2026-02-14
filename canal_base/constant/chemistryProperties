@@ -19,20 +19,19 @@ chemistryType
     solver          EulerImplicit;
 }
 
-chemistry           on;
+chemistry       on;
 
 initialChemicalTimeStep 1e-07;
+
+odeCoeffs
+{
+    solver          seulex;
+    eps             0.05;
+}
 
 EulerImplicitCoeffs
 {
     cTauChem        1;
-}
-
-odeCoeffs
-{
-    solver          Rosenbrock43;
-    absTol          1e-8;
-    relTol          0.01;
 }
 
 #include "reactions"

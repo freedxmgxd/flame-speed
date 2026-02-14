@@ -55,10 +55,13 @@ if mesh is None:
 
 points = numpy_support.vtk_to_numpy(mesh.GetPoints().GetData())
 point_data = mesh.GetPointData()
+cell_data = mesh.GetCellData()
 
 
 def get_array(name):
     array = point_data.GetArray(name)
+    if array is None:
+        array = cell_data.GetArray(name)
     if array is None:
         return None
     return numpy_support.vtk_to_numpy(array)

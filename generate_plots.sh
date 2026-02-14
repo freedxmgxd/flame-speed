@@ -177,13 +177,44 @@ replot
 set output
 GP_EOF
 
+cat <<'GP_EOF' > "$OUTPUT_DIR/plot_reduction_ratio.gp"
+set terminal pngcairo size 800,600
+set output 'reaction_reduction_ratio.png'
+set title 'Reaction Reduction Ratio'
+set xlabel 'Reduction Step'
+set ylabel 'Relative Difference in Value'
+set grid
+set key top right
+set key opaque
+set key font ",14"
+set key spacing 1.2
+set key samplen 2.0
+set key width 1
+
+# Consistent styles
+set style line 1 lc rgb '#1f77b4' lt 1 lw 3 pt 7 ps 1.0
+set datafile separator ","
+set datafile columnheaders
+set datafile missing ""
+set offsets graph 0, 0, 0.05, 0.05
+plot 'reaction_reduction.csv' using 0:4 with linespoints ls 1 title 'Reduction Ratio' axes x1y1
+
+# Also export as SVG
+set output
+set terminal svg size 800,600
+set output 'reaction_reduction_ratio.svg'
+replot
+set output
+GP_EOF
+
 # Run gnuplot in output directory
 cd "$OUTPUT_DIR"
 gnuplot plot_commands_speed.gp
 gnuplot plot_commands_temp.gp
 gnuplot plot_commands_tmax.gp
 gnuplot plot_commands_zmax.gp
+gnuplot plot_reduction_ratio.gp
 
 # Summary
 printf "\nDone. Generated files in $OUTPUT_DIR:\n"
-ls -1 flame_speed_comparison.* temperature_comparison.* tmax_comparison.* zmax_comparison.* | sed 's/^/  - /'
+ls -1 flame_speed_comparison.* temperature_comparison.* tmax_comparison.* zmax_comparison.* reaction_reduction_ratio.* 2>/dev/null | sed 's/^/  - /'

@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "cantera/base/AnyMap.h"
 #include "cantera/base/Solution.h"
@@ -95,7 +96,6 @@ thermo_state flamespeed(std::shared_ptr<Cantera::Solution> sol,
     state.Tad      = Tad;
 
     std::cout << "phi = " << mixture_ratio << ", Tad = " << Tad << std::endl;
-
 
     //=============  build each domain ========================
 
@@ -296,6 +296,7 @@ thermo_state flamespeed(std::shared_ptr<Cantera::Solution> sol,
 template <typename Function, typename... Args>
 Cantera::AnyMap mechanism_reduction(std::shared_ptr<Cantera::Solution> sol_complete,
                                     double tolerance_value,
+                                    int max_reactions,
                                     double minimum_reaction_weight,
                                     Function function_reference,
                                     Args... args) {
@@ -309,6 +310,10 @@ Cantera::AnyMap mechanism_reduction(std::shared_ptr<Cantera::Solution> sol_compl
 
   // how to get phase definition from existing Solution object
   // TODO: maybe pick direct from gri30.yaml instead? need test
+
+  // TODO: aplicar redução de especie tambem
+  // TODO: Comparar com os mecanismos reduzidos disponiveis
+  
   auto phaseNode = sol_complete->thermo()->input();
 
   std::vector<Cantera::AnyMap> species;
@@ -328,7 +333,13 @@ Cantera::AnyMap mechanism_reduction(std::shared_ptr<Cantera::Solution> sol_compl
   Cantera::AnyMap rootNode;
   Cantera::AnyMap rootNode_new;
 
-  while ((std::abs(value_new - value_baseline) < tolerance_value) and (Reactions.size() > 0)) {
+  auto value_diff = std::abs(value_new - value_baseline);
+  
+  std::ofstream reduction_log("output/reaction_reduction.csv", std::ios::trunc);
+  reduction_log << "num_reactions,value_diff,value_baseline,ratio\n";
+  reduction_log << Reactions.size() << "," << value_diff << "," << value_baseline << "," << (value_baseline != 0 ? value_diff / value_baseline : 0) << "\n";
+  
+  while ((value_diff < tolerance_value) and (Reactions.size() > 0)) {
     rootNode = rootNode_new;
     // TODO: Remove reactions with weight below minimum_reaction_weight
     for (auto it = Reactions.begin(); it != Reactions.end();) {
@@ -406,6 +417,10 @@ Cantera::AnyMap mechanism_reduction(std::shared_ptr<Cantera::Solution> sol_compl
     // sol_new, temperature, pressure, uin, phi,                                   refine_grid,
     // loglevel, Reactions
     value_new = function_reference(sol_new, args..., Reactions);
+    value_diff = std::abs(value_new - value_baseline);
+    reduction_log << Reactions.size() << "," << value_diff << "," << value_baseline << "," << (value_baseline != 0 ? value_diff / value_baseline : 0) << "\n";
+
   }
+  reduction_log.close();
   return rootNode;
 }
