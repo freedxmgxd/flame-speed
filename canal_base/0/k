@@ -39,12 +39,6 @@ boundaryField
         type            kqRWallFunction;
         value           $internalField;
     }
-    step
-    {
-        type            inletOutlet;
-        value           $internalField;
-        inletValue      $internalField;
-    }
     plane_symmetry_z
     {
         type            symmetryPlane;

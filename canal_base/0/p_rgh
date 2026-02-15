@@ -37,11 +37,6 @@ boundaryField
         type            fixedFluxPressure;
         value           $internalField;
     }
-    step
-    {
-        type            fixedValue;
-        value           $internalField;
-    }
     plane_symmetry_z
     {
         type            symmetryPlane;

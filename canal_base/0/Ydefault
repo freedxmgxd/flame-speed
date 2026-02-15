@@ -29,13 +29,11 @@ boundaryField
     }
     outlet
     {
-        type            zeroGradient;
+        type            inletOutlet;
+        inletValue      $internalField;
+        value           $internalField;
     }
     canal_wall
-    {
-        type            zeroGradient;
-    }
-    step
     {
         type            zeroGradient;
     }

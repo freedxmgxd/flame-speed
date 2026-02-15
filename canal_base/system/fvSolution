@@ -69,9 +69,12 @@ solvers
 PIMPLE
 {
     momentumPredictor   yes;
-    nCorrectors         2;
-    nNonOrthogonalCorrectors 0;
+    nOuterCorrectors  2; // Essencial para acoplamento de densidade/pressão
+    nCorrectors       2;
+    nNonOrthogonalCorrectors 2; // ou 3. Isso corrige o erro da malha na quina.
+    consistent        yes;
 }
+
 
 relaxationFactors
 {

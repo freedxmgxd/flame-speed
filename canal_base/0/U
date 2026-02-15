@@ -29,16 +29,12 @@ boundaryField
     }
     outlet
     {
-        type            zeroGradient;
+        type            pressureInletOutletVelocity;
+        value           $internalField;
     }
     canal_wall
     {
         type            noSlip;
-    }
-    step
-    {
-        type            pressureInletOutletVelocity;
-        value           uniform (0 0 0);
     }
     plane_symmetry_z
     {

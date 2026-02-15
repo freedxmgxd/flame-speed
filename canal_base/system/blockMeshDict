@@ -24,29 +24,68 @@ ${vertex_list}
 
 blocks
 (
+    // Bloco 1: Canal de entrada (inlet)
+    // Grading suavizado em Y para distribuição melhor nas camadas limites
     hex (0 4 6 2 1 5 7 3)
-    (${mesh_sizes_block1})
-    simpleGrading (1 0.1 1)
+    (${mesh_sizes_canal_inlet})
+    simpleGrading ${grading_canal_inlet}
 
+    // Bloco 2: Canal divergente
+    // Mesmo grading suavizado para continuidade
     hex (4 8 10 6 5 9 11 7)
-    (${mesh_sizes_block2})
-    simpleGrading (1 0.1 1)
+    (${mesh_sizes_canal_divergente})
+    simpleGrading ${grading_canal_divergente}
 
+    // Bloco 3: Centro da saída (parte inferior z)
+    // Grading ainda mais suave na transição para expansão
     hex (8 12 14 10 9 13 15 11)
-    (${mesh_sizes_block3})
-    simpleGrading (1 0.1 1)
+    (${mesh_sizes_outlet_center})
+    simpleGrading ${grading_outlet_center}
 
-    hex (10 14 18 16 11 15 19 17)
-    (${mesh_sizes_block4})
-    simpleGrading (1 1 1)
+    // Bloco 4: Espessura do canal em Y (parte inferior z)
+    // Grading uniforme na espessura da parede
+    hex (10 14 28 26 11 15 29 27)
+    (${mesh_sizes_outlet_espessura_y})
+    simpleGrading ${grading_outlet_espessura_y}
 
+    // Bloco 5a: Topo da seção central (y=0..31.6, z=0..+height)
+    // Grading suave para transição consistente
     hex (9 13 15 11 20 22 23 21)
-    (${mesh_sizes_block5})
-    simpleGrading (1 0.1 1)
+    (${mesh_sizes_outlet_center})
+    simpleGrading ${grading_outlet_center}
 
-    hex (11 15 19 17 21 23 25 24)
-    (${mesh_sizes_block6})
-    simpleGrading (1 1 1)
+    // Bloco 5b: Topo da espessura (y=31.6..33.6, z=0..+height)
+    // Uniforme na espessura
+    hex (11 15 29 27 21 23 31 30)
+    (${mesh_sizes_outlet_espessura_z})
+    simpleGrading ${grading_outlet_espessura_z}
+
+    // Bloco 6a (inferior): Parte externa Y (z=-1..0)
+    hex (26 28 18 16 27 29 19 17)
+    (${mesh_sizes_outlet_externo_y})
+    simpleGrading ${grading_outlet_externo_y}
+
+    // Bloco 6b (superior): Parte externa Y (z=0..+1)
+    hex (27 29 19 17 30 31 25 24)
+    (${mesh_sizes_outlet_externo_y})
+    simpleGrading ${grading_outlet_externo_y}
+
+    // Bloco 7a: Parte externa Z (superior, y=0..width_expansion/2)
+    // Grading suave na direção da expansão
+    hex (20 22 23 21 32 33 37 36)
+    (${mesh_sizes_outlet_externo_z_upper_center})
+    simpleGrading ${grading_outlet_externo_z_upper_center}
+
+    // Bloco 7b: Parte externa Z (superior, y=width_expansion/2..thickness)
+    // Compartilha face com 7a, deve ter mesmo grading
+    hex (21 23 31 30 36 37 39 38)
+    (${mesh_sizes_outlet_externo_z_upper_thickness})
+    simpleGrading ${grading_outlet_externo_z_upper_thickness}
+
+    // Bloco 7c: Parte externa Z (superior, y=thickness..extern)
+    hex (30 31 25 24 38 39 35 34)
+    (${mesh_sizes_outlet_externo_z_upper_extern})
+    simpleGrading ${grading_outlet_externo_z_upper_extern}
 );
 
 boundary
@@ -64,10 +103,41 @@ boundary
         type patch;
         faces
         (
+            // Saida do centro (Bloco 3)
             (12 13 14 15)
-            (14 15 19 18)
-            (13 15 23 22)
-            (15 19 25 23)
+            // Saida do topo centro (Bloco 5a)
+            (13 22 23 15)
+            // Saida do topo espessura (Bloco 5b)
+            (15 23 31 29)
+            // Saida da espessura em Y (Bloco 4)
+            (14 15 29 28)
+            // Saida externa em Y (Bloco 6a/6b)
+            (28 18 19 29)
+            (29 19 25 31)
+            // Saida do externo Z superior (Bloco 7a/7b/7c)
+            (22 23 37 33)
+            (23 31 39 37)
+            (31 25 35 39)
+
+            // Extern agrupado no outlet (faces externas)
+            // Faces externas normal a y (Bloco 6a/6b)
+            (16 18 19 17)
+            (17 19 25 24)
+            // Face externa normal a x (entrada externa, Bloco 6a/6b)
+            (26 16 17 27)
+            (27 17 24 30)
+            // Face externa normal a x (entrada externa, Bloco 7a)
+            (20 21 36 32)
+            // Face externa normal a x (entrada externa, Bloco 7b)
+            (21 30 38 36)
+            // Face externa normal a x (entrada externa, Bloco 7c)
+            (30 24 34 38)
+            // Face externa normal a y (lado externo, Bloco 7c)
+            (24 25 35 34)
+            // Face externa normal a z (topo externo, Bloco 7a/7b/7c)
+            (32 33 37 36)
+            (36 37 39 38)
+            (38 39 35 34)
         );
     }
     plane_symmetry_z
@@ -78,7 +148,9 @@ boundary
             (0 2 4 6)
             (4 6 8 10)
             (8 10 12 14)
-            (10 16 18 14)
+            (10 26 28 14)
+            // Bloco 6a: Parte externa Y em z=-1
+            (26 28 18 16)
         );
     }
     plane_symmetry_y
@@ -89,7 +161,10 @@ boundary
             (0 1 4 5)
             (4 5 8 9)
             (8 9 12 13)
-            (9 13 22 20)
+            // Lado de simetria do bloco 5a (y=0)
+            (9 20 22 13)
+            // Lado de simetria do bloco 7a (y=0)
+            (20 22 33 32)
         );
     }
     canal_wall
@@ -97,36 +172,64 @@ boundary
         type wall;
         faces
         (
-            // Parede superior (top) do inlet
+            // Parede superior (top) do inlet - Bloco 1
             (2 3 6 7)
-            // Back (parede inferior) do inlet
+            // Back (parede inferior) do inlet - Bloco 1
             (1 3 5 7)
-            // Parede superior (top) do divergente
+            // Parede superior (top) do divergente - Bloco 2
             (6 7 10 11)
-            // Back (parede inferior) do divergente
+            // Back (parede inferior) do divergente - Bloco 2
             (5 7 9 11)
+            // (Somente blocos 1 e 2)
+
+            // Canal wall thickness agrupado no canal_wall
+            // Face normal a x da espessura (Bloco 4)
+            (10 26 27 11)
+            // Face normal a x da espessura (Bloco 5b)
+            (11 27 30 21)
+            // Face normal a x do topo (Bloco 5a)
+            (9 11 20 21)
+
         );
     }
-    step
-    {
-        type patch;
-        faces
-        (
-            // Back do degrau (block 5)
-            (20 21 23 22)
-            // Parede do degrau (block 5)
-            (11 21 20 9)
-            // Parede do degrau (block 4)
-            (10 11 17 16)
-            // Back do degrau (block 6)
-            (21 23 25 24)
-            // Parede do degrau (block 6)
-            (11 17 24 21)
-            // Parede do degrau (block 6)
-            (17 19 25 24)
-            (16 17 19 18)
-        );
-    }
+    // extern
+    // {
+    //     type patch;
+    //     faces
+    //     (
+    //         // Faces externas normal a y (Bloco 6a/6b)
+    //         (16 18 19 17)
+    //         (17 19 25 24)
+    //         // Face externa normal a x (entrada externa, Bloco 6a/6b)
+    //         (26 16 17 27)
+    //         (27 17 24 30)
+    //         // Face externa normal a x (entrada externa, Bloco 7a)
+    //         (20 21 36 32)
+    //         // Face externa normal a x (entrada externa, Bloco 7b)
+    //         (21 30 38 36)
+    //         // Face externa normal a x (entrada externa, Bloco 7c)
+    //         (30 24 34 38)
+    //         // Face externa normal a y (lado externo, Bloco 7c)
+    //         (24 25 35 34)
+    //         // Face externa normal a z (topo externo, Bloco 7a/7b/7c)
+    //         (32 33 37 36)
+    //         (36 37 39 38)
+    //         (38 39 35 34)
+    //     );
+    // }
+    // channel_wall_thickness
+    // {
+    //     type wall;
+    //     faces
+    //     (
+    //         // Face normal a x da espessura (Bloco 4)
+    //         (10 26 27 11)
+    //         // Face normal a x da espessura (Bloco 5b)
+    //         (11 27 30 21)
+    //         // Face normal a x do topo (Bloco 5a)
+    //         (9 11 20 21)
+    //     );
+    // }
 );
 
 // ************************************************************************* //

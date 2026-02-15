@@ -37,11 +37,6 @@ boundaryField
         type            nutkWallFunction;
         value           $internalField;
     }
-    step
-    {
-        type            calculated;
-        value           $internalField;
-    }
     plane_symmetry_z
     {
         type            symmetryPlane;

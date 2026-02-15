@@ -22,28 +22,7 @@ boundaryField
 {
     #includeEtc "caseDicts/setConstraintTypes"
 
-    inlet
-    {
-        type            MarshakRadiation;
-        emissivityMode  lookup;
-        emissivity      uniform 1;
-        value           $internalField;
-    }
-    outlet
-    {
-        type            MarshakRadiation;
-        emissivityMode  lookup;
-        emissivity      uniform 1;
-        value           $internalField;
-    }
-    canal_wall
-    {
-        type            MarshakRadiation;
-        emissivityMode  lookup;
-        emissivity      uniform 1;
-        value           $internalField;
-    }
-    step
+    ".*"
     {
         type            MarshakRadiation;
         emissivityMode  lookup;

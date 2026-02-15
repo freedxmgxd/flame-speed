@@ -22,23 +22,6 @@ boundaryField
 {
     #includeEtc "caseDicts/setConstraintTypes"
 
-    inlet
-    {
-        type            zeroGradient;
-    }
-    outlet
-    {
-        type            fixedValue;
-        value           uniform 1e5;
-    }
-    canal_wall
-    {
-        type            zeroGradient;
-    }
-    step
-    {
-        type            zeroGradient;
-    }
     plane_symmetry_z
     {
         type            symmetryPlane;
