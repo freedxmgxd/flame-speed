@@ -34,8 +34,12 @@ transform.Transform.Scale = [1.0, 1.0, -1.0]
 transform_mirror = Transform(Input=reader, registrationName='transform_mirror')
 transform_mirror.Transform.Scale = [1.0, -1.0, -1.0]
 
+# Convert multiblock outputs to datasets before appending
+merge_original = MergeBlocks(Input=transform)
+merge_mirror = MergeBlocks(Input=transform_mirror)
+
 # Combine original and mirrored geometries
-append = AppendDatasets(Input=[transform, transform_mirror])
+append = AppendDatasets(Input=[merge_original, merge_mirror])
 append.UpdatePipeline()
 merged_data = append
 
@@ -62,6 +66,45 @@ else:
 # Create layout
 layout = CreateLayout(name='Monitor')
 layout.AssignView(0, render_view)
+
+# Set active view and render
+SetActiveView(render_view)
+# ----------------------------------------------------------------
+# NEW LAYOUT: Velocity Range 30-40 cm/s
+# ----------------------------------------------------------------
+
+# Create Threshold filter
+threshold = Threshold(Input=merged_data)
+# Ensure we are thresholding on U (Magnitude)
+threshold.Scalars = ['CELLS', 'U']
+threshold.ThresholdMethod = 'Between'
+threshold.LowerThreshold = 0.3
+threshold.UpperThreshold = 0.4
+
+# Create a new view
+render_view_2 = CreateView('RenderView')
+render_view_2.ViewSize = [1400, 800]
+
+# 1. Show Background Grid (Wireframe of full mesh)
+display_grid = Show(merged_data, render_view_2)
+display_grid.Representation = 'Wireframe'
+display_grid.Opacity = 0.1 # Make it subtle
+display_grid.ColorArrayName = ['CELLS', 'U']
+display_grid.LookupTable = u_lut
+
+# 2. Show Thresholded Surface
+display_threshold = Show(threshold, render_view_2)
+display_threshold.Representation = 'Surface'
+display_threshold.ColorArrayName = ['CELLS', 'U']
+display_threshold.LookupTable = u_lut
+display_threshold.SetScalarBarVisibility(render_view_2, True)
+
+# Create the new layout
+layout_2 = CreateLayout(name='Velocity_0.3_0.4_Range')
+layout_2.AssignView(0, render_view_2)
+
+# Reset camera for the new view
+render_view_2.ResetCamera()
 
 # Set active view and render
 SetActiveView(render_view)

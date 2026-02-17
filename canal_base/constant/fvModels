@@ -25,7 +25,7 @@ sparkIgnition
         scale       squarePulse;
         start       ${time_start_ignition};
         duration    0.20;
-        value       3;
+        value       10;
     }
 
 }

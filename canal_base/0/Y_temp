@@ -16,7 +16,7 @@ FoamFile
 
 dimensions      [];
 
-internalField   uniform ${INITIAL_CONCENTRATION};
+internalField   uniform ${initial_concentration};
 
 boundaryField
 {
@@ -25,7 +25,7 @@ boundaryField
     inlet
     {
         type            fixedValue;
-        value           uniform ${INITIAL_CONCENTRATION};
+        value           uniform ${initial_concentration};
     }
     outlet
     {

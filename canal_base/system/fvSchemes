@@ -23,6 +23,8 @@ gradSchemes
 {
     // default         Gauss linear;
     default         cellLimited Gauss linear 1;
+    grad(p)         leastSquares;
+    grad(p_rgh)     leastSquares;
     limitedGrad     cellLimited Gauss linear 1;
 }
 
@@ -30,7 +32,7 @@ divSchemes
 {
     default             none;
 
-    div(phi,U)          Gauss linearUpwind grad(U);
+    div(phi,U)          Gauss upwind;
     div(phi,Yi_h)       Gauss limitedLinear 1;
     div(phi,k)          Gauss linearUpwind limitedGrad;
     div(phi,epsilon)    Gauss linearUpwind limitedGrad;
@@ -44,7 +46,7 @@ divSchemes
 
 laplacianSchemes
 {
-    default        Gauss linear corrected;
+    default        Gauss linear limited corrected 0.33;
 }
 
 interpolationSchemes
@@ -55,6 +57,14 @@ interpolationSchemes
 snGradSchemes
 {
     default         corrected;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+fluxRequired
+{
+    default         no;
+    p_rgh;
 }
 
 // ************************************************************************* //

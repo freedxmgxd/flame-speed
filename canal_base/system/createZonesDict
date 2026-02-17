@@ -18,8 +18,8 @@ ignitionZone
     type        sphere;
     zoneType    cell;
 
-    centre      (0.147 0 0);
-    radius      0.010;
+    centre      ${position_ignition_flame};
+    radius      0.007;
 }
 
 // ************************************************************************* //

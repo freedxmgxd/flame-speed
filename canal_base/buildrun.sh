@@ -6,11 +6,13 @@ mkdir -p logs
 VERBOSE=false
 CLEAN_BUILD=false
 SINGLETHREAD=false
+REFINE_MESH=false
 
 for arg in "$@"; do
   [ "$arg" = "--verbose" ] && VERBOSE=true
   [ "$arg" = "--cleanBuild" ] && CLEAN_BUILD=true
   [ "$arg" = "--singlethread" ] && SINGLETHREAD=true
+  [ "$arg" = "--refineMesh" ] && REFINE_MESH=true
 done
 
 # Run clean if requested
@@ -22,7 +24,9 @@ fi
 if [ "$VERBOSE" = true ]; then
   blockMesh 2>&1 | tee logs/blockMesh.log
   createZones 2>&1 | tee logs/createZones.log
-  refineMesh -all 2>&1 | tee logs/refineMesh.log
+  if [ "$REFINE_MESH" = true ]; then
+    refineMesh -all 2>&1 | tee logs/refineMesh.log
+  fi
   checkMesh 2>&1 | tee logs/checkMesh.log
   
   # Open ParaView monitor if checkMesh succeeded
@@ -36,7 +40,7 @@ if [ "$VERBOSE" = true ]; then
     foamRun 2>&1 | tee logs/foamRun.log
   else
     decomposePar -force 2>&1 | tee logs/decomposePar.log
-    mpirun -np 16 --oversubscribe foamRun -parallel 2>&1 | tee logs/foamRun.log || true
+    mpirun -np 4 --oversubscribe foamRun -parallel 2>&1 | tee logs/foamRun.log || true
     reconstructPar 2>&1 | tee logs/reconstructPar.log
   fi
 else
@@ -44,8 +48,10 @@ else
   blockMesh 2>&1 >> logs/blockMesh.log
   echo "Running createZones..."
   createZones 2>&1 >> logs/createZones.log
-  echo "Running refineMesh..."
-  refineMesh -all 2>&1 >> logs/refineMesh.log
+  if [ "$REFINE_MESH" = true ]; then
+    echo "Running refineMesh..."
+    refineMesh -all 2>&1 >> logs/refineMesh.log
+  fi
   echo "Running checkMesh..."
   checkMesh 2>&1 >> logs/checkMesh.log
   
@@ -63,7 +69,7 @@ else
     echo "Running decomposePar..."
     decomposePar -force 2>&1 >> logs/decomposePar.log
     echo "Running foamRun (mpirun)..."
-    mpirun -np 16 --oversubscribe foamRun -parallel 2>&1 >> logs/foamRun.log || true
+    mpirun -np 4 --oversubscribe foamRun -parallel 2>&1 >> logs/foamRun.log || true
     echo "Running reconstructPar..."
     reconstructPar 2>&1 >> logs/reconstructPar.log
   fi

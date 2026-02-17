@@ -55,37 +55,83 @@ int main(int argc, char **argv) {
   auto width_extern        = 6.0;  // mm (Largura sobressalente adicional)
   auto height_extern       = 6.0;  // mm (Altura sobressalente adicional)
 
-  auto min_cell_size       = 0.37 * 5.0; // mm (menor comprimento de célula)
+  // Defina o tamanho máximo e mínimo de célula em cada direção (mm)
+  auto max_cell_size_x     = 1.0;
+  auto max_cell_size_y     = 1.0;
+  auto max_cell_size_z     = 1.0;
+
+  // Mínimos ajustados para evitar células muito finas
+  auto min_cell_size_x     = 0.15; // mm
+  auto min_cell_size_y     = 0.2;  // mm (camada limite, mais seguro)
+  auto min_cell_size_z     = 0.15; // mm
 
   auto velocity_inlet      = 0.5; // m/s (Velocidade de entrada)'
 
-  auto time_cold_flow      = ((length_inlet + length_expansion) * 0.001) /
-                        velocity_inlet; // Tempo total de simulação (s)
+  auto length_channel      = ((length_inlet + length_expansion) * 0.001);
+  auto time_cold_flow =
+      length_channel / velocity_inlet; // Tempo total de simulação (s)
+
+  time_cold_flow = 0.1;
+  // Calcular posicao da ignicao (final da expansao)
+  double position_ignition_flame_val =
+      length_channel + (length_extern * 0.001) / 2.0;
 
   auto time_simulation = time_cold_flow + 2.0; // Tempo total de simulação (s)
 
   // Keep dx continuous across blocks by scaling cell counts with length.
-  const auto dx_ref    = min_cell_size;
+  // Função para calcular o número de células garantindo dx_max e dx_min mesmo com grading
+  auto nCellsForSizeLimits = [](double L, double grading, double dx_max,
+                                double dx_min) -> int {
+    if (grading == 1.0) {
+      int n_by_max = static_cast<int>(std::ceil(L / dx_max));
+      int n_by_min = static_cast<int>(std::floor(L / dx_min));
+      int n        = std::max(2, std::min(n_by_max, n_by_min));
+      return n;
+    }
+    // Busca binária para N
+    int N_lo = 2, N_hi = 1000;
+    int N_best = N_hi;
+    while (N_lo <= N_hi) {
+      int N                = (N_lo + N_hi) / 2;
+      double r             = grading;
+      double dx_min_actual = L * (1.0 - r) / (1.0 - std::pow(r, N));
+      double dx_max_actual = dx_min_actual * std::pow(r, N - 1);
+      if (dx_max_actual <= dx_max && dx_min_actual >= dx_min) {
+        N_best = N;
+        N_hi   = N - 1;
+      } else {
+        N_lo = N + 1;
+      }
+    }
+    return N_best;
+  };
+
+  // Grading suave para evitar transições abruptas entre blocos
+  double grading_y = 1.0;
+  double grading_z = 1.0;
+
   auto n_cells_x_inlet =
-      std::max(2, static_cast<int>(std::lround(length_inlet / dx_ref)));
+      std::max(2, nCellsForSizeLimits(length_inlet, 1.0, max_cell_size_x,
+                                      min_cell_size_x));
   auto n_cells_x_expansion =
-      std::max(2, static_cast<int>(std::lround(length_expansion / dx_ref)));
+      std::max(2, nCellsForSizeLimits(length_expansion, 1.0, max_cell_size_x,
+                                      min_cell_size_x));
   auto n_cells_x_extern =
-      std::max(2, static_cast<int>(std::lround(length_extern / dx_ref)));
-
-  // // Keep dy/dz close to dx at the inlet half-width and full height.
+      std::max(2, nCellsForSizeLimits(length_extern, 1.0, max_cell_size_x,
+                                      min_cell_size_x));
   auto n_cells_y =
-      std::max(2, static_cast<int>(std::lround((width_inlet * 0.5) / dx_ref)));
+      std::max(2, nCellsForSizeLimits(width_expansion * 0.5, grading_y,
+                                      max_cell_size_y, min_cell_size_y));
   auto n_cells_z =
-      std::max(2, static_cast<int>(std::lround(height_channel_half / dx_ref)));
-  auto n_cells_y_external = std::max(
-      2, static_cast<int>(std::lround(
-             ((width_expansion * 0.5) + channel_thickness + width_extern) /
-             dx_ref)));
-  auto n_cells_z_extern =
-      std::max(2, static_cast<int>(std::lround(height_extern / dx_ref)));
+      std::max(2, nCellsForSizeLimits(height_channel_half, grading_z,
+                                      max_cell_size_z, min_cell_size_z));
 
-    std::string vertices[40] = {
+  // Calculate actual dz for the channel part to maintain uniformity in extern
+  double dz_actual = height_channel_half / n_cells_z;
+  auto n_cells_z_extern =
+      std::max(2, static_cast<int>(std::ceil(height_extern / dz_actual)));
+
+  std::string vertices[40] = {
       "(0 0 " + std::to_string(-height_channel_half) + ")", // Vertex 0
       "(0 0 0)",                                            // Vertex 1
       "(0 " + std::to_string(width_inlet / 2) + " " +
@@ -206,8 +252,7 @@ int main(int argc, char **argv) {
           std::to_string(height_channel_half + height_extern) +
           ")", // Vertex 38
       "(" + std::to_string(length_inlet + length_expansion + length_extern) +
-          " " +
-          std::to_string(width_expansion / 2 + channel_thickness) + " " +
+          " " + std::to_string(width_expansion / 2 + channel_thickness) + " " +
           std::to_string(height_channel_half + height_extern) +
           ")", // Vertex 39
   };
@@ -218,9 +263,13 @@ int main(int argc, char **argv) {
   }
 
   auto n_cells_y_thickness =
-      std::max(2, static_cast<int>(std::lround(channel_thickness / dx_ref)));
+      std::max(2, nCellsForSizeLimits(channel_thickness, grading_y,
+                                      max_cell_size_y, min_cell_size_y));
   auto n_cells_y_extern =
-      std::max(2, n_cells_y_external - n_cells_y - n_cells_y_thickness);
+      std::max(2, nCellsForSizeLimits(width_extern, grading_y, max_cell_size_y,
+                                      min_cell_size_y));
+
+  auto n_cells_y_external = n_cells_y + n_cells_y_thickness + n_cells_y_extern;
 
   // Reorganização dos blocos com nomenclatura clara
   std::string mesh_sizes_canal_inlet = std::to_string(n_cells_x_inlet) + " " +
@@ -238,14 +287,12 @@ int main(int argc, char **argv) {
   std::string mesh_sizes_outlet_espessura_z =
       std::to_string(n_cells_x_extern) + " " +
       std::to_string(n_cells_y_thickness) + " " + std::to_string(n_cells_z);
-    std::string mesh_sizes_outlet_externo_y =
-            std::to_string(n_cells_x_extern) + " " +
-            std::to_string(n_cells_y_extern) + " " +
-            std::to_string(n_cells_z);
+  std::string mesh_sizes_outlet_externo_y =
+      std::to_string(n_cells_x_extern) + " " +
+      std::to_string(n_cells_y_extern) + " " + std::to_string(n_cells_z);
   std::string mesh_sizes_outlet_externo_y_full =
       std::to_string(n_cells_x_extern) + " " +
-      std::to_string(n_cells_y_extern) + " " +
-      std::to_string(2 * n_cells_z);
+      std::to_string(n_cells_y_extern) + " " + std::to_string(2 * n_cells_z);
   std::string mesh_sizes_outlet_externo_z_lower =
       std::to_string(n_cells_x_extern) + " " + std::to_string(n_cells_y) + " " +
       std::to_string(n_cells_z);
@@ -258,25 +305,34 @@ int main(int argc, char **argv) {
       std::to_string(n_cells_z_extern);
   std::string mesh_sizes_outlet_externo_z_upper_extern =
       std::to_string(n_cells_x_extern) + " " +
-      std::to_string(n_cells_y_extern) + " " +
-      std::to_string(n_cells_z_extern);
+      std::to_string(n_cells_y_extern) + " " + std::to_string(n_cells_z_extern);
 
   // Configuração de grading suavizado para melhor transição
   // IMPORTANTE: Todos os blocos que compartilham faces devem ter o MESMO grading
   // Solução: usar grading 0.2 em TODOS os blocos conectados do fluxo principal
-  const double grading_y_channel = 0.2;  // Consistente para todo o fluxo
-  
+  const double grading_y_channel = 1.0; // Consistente para todo o fluxo
+
   // Formatados como (1 n 1) para serem inseridos diretamente no blockMeshDict
-  std::string grading_canal_inlet = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_canal_divergente = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_outlet_center = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_outlet_espessura_y = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_outlet_espessura_z = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_outlet_externo_z_upper_center = "(1 " + std::to_string(grading_y_channel) + " 1)";
-  std::string grading_outlet_externo_y = "(1 1 1)";  // Blocos 6a/6b puros externos (sem compartilhamento em Y)  
-  std::string grading_outlet_externo_z_upper_thickness = "(1 " + std::to_string(grading_y_channel) + " 1)";  // 7b compartilha com 7a
-  std::string grading_outlet_externo_z_upper_extern = "(1 1 1)";  // 7c puro externo
-  
+  std::string grading_canal_inlet =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_canal_divergente =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_outlet_center =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_outlet_espessura_y =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_outlet_espessura_z =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_outlet_externo_z_upper_center =
+      "(1 " + std::to_string(grading_y_channel) + " 1)";
+  std::string grading_outlet_externo_y =
+      "(1 1 1)"; // Blocos 6a/6b puros externos (sem compartilhamento em Y)
+  std::string grading_outlet_externo_z_upper_thickness =
+      "(1 " + std::to_string(grading_y_channel) +
+      " 1)"; // 7b compartilha com 7a
+  std::string grading_outlet_externo_z_upper_extern =
+      "(1 1 1)"; // 7c puro externo
+
   // TODO: Ajustar as malhas
   // TODO: Ajuster os arquivos de condição de contorno
 
@@ -337,21 +393,24 @@ int main(int argc, char **argv) {
       {"${mesh_sizes_outlet_externo_y_full}", mesh_sizes_outlet_externo_y_full},
       {"${mesh_sizes_outlet_externo_z_lower}",
        mesh_sizes_outlet_externo_z_lower},
-     {"${mesh_sizes_outlet_externo_z_upper_center}",
-      mesh_sizes_outlet_externo_z_upper_center},
-     {"${mesh_sizes_outlet_externo_z_upper_thickness}",
-      mesh_sizes_outlet_externo_z_upper_thickness},
-     {"${mesh_sizes_outlet_externo_z_upper_extern}",
-      mesh_sizes_outlet_externo_z_upper_extern},
-     {"${grading_canal_inlet}", grading_canal_inlet},
-     {"${grading_canal_divergente}", grading_canal_divergente},
-     {"${grading_outlet_center}", grading_outlet_center},
-     {"${grading_outlet_espessura_y}", grading_outlet_espessura_y},
-     {"${grading_outlet_espessura_z}", grading_outlet_espessura_z},
-     {"${grading_outlet_externo_z_upper_center}", grading_outlet_externo_z_upper_center},
-     {"${grading_outlet_externo_y}", grading_outlet_externo_y},
-     {"${grading_outlet_externo_z_upper_thickness}", grading_outlet_externo_z_upper_thickness},
-     {"${grading_outlet_externo_z_upper_extern}", grading_outlet_externo_z_upper_extern},
+      {"${mesh_sizes_outlet_externo_z_upper_center}",
+       mesh_sizes_outlet_externo_z_upper_center},
+      {"${mesh_sizes_outlet_externo_z_upper_thickness}",
+       mesh_sizes_outlet_externo_z_upper_thickness},
+      {"${mesh_sizes_outlet_externo_z_upper_extern}",
+       mesh_sizes_outlet_externo_z_upper_extern},
+      {"${grading_canal_inlet}", grading_canal_inlet},
+      {"${grading_canal_divergente}", grading_canal_divergente},
+      {"${grading_outlet_center}", grading_outlet_center},
+      {"${grading_outlet_espessura_y}", grading_outlet_espessura_y},
+      {"${grading_outlet_espessura_z}", grading_outlet_espessura_z},
+      {"${grading_outlet_externo_z_upper_center}",
+       grading_outlet_externo_z_upper_center},
+      {"${grading_outlet_externo_y}", grading_outlet_externo_y},
+      {"${grading_outlet_externo_z_upper_thickness}",
+       grading_outlet_externo_z_upper_thickness},
+      {"${grading_outlet_externo_z_upper_extern}",
+       grading_outlet_externo_z_upper_extern},
   };
   replaceInFile(blockMeshfilePath, blockMeshReplacements);
 
@@ -385,7 +444,7 @@ int main(int argc, char **argv) {
       if (pos != std::string::npos) {
         line.replace(pos, 11, molecule);
       }
-      pos = line.find("${INITIAL_CONCENTRATION}");
+      pos = line.find("${initial_concentration}");
       if (pos != std::string::npos) {
         line.replace(pos, 24, std::to_string(concentration));
       }
@@ -446,6 +505,24 @@ int main(int argc, char **argv) {
   std::map<std::string, std::string> fvModelsReplacements = {
       {"${time_start_ignition}", time_cold_flow_str}};
   replaceInFile(fvModelsPath, fvModelsReplacements);
+
+  std::string position_ignition_flame_str =
+      std::to_string(position_ignition_flame_val);
+  // Remove trailing zeros
+  position_ignition_flame_str.erase(
+      position_ignition_flame_str.find_last_not_of('0') + 1, std::string::npos);
+  if (position_ignition_flame_str.back() == '.') {
+    position_ignition_flame_str.pop_back();
+  }
+  // Formato vetorial (X 0 0)
+  std::string position_ignition_flame_vec =
+      "(" + position_ignition_flame_str + " 0 0)";
+
+  // Substituir no createZonesDict
+  std::string createZonesPath = dirPath + "/system/createZonesDict";
+  std::map<std::string, std::string> createZonesReplacements = {
+      {"${position_ignition_flame}", position_ignition_flame_vec}};
+  replaceInFile(createZonesPath, createZonesReplacements);
 
   // TODO: implementar uma forma de executar o script do OpenFOAM
 
