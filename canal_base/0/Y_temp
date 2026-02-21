@@ -30,8 +30,8 @@ boundaryField
     outlet
     {
         type            inletOutlet;
-        inletValue      $internalField;
-        value           $internalField;
+        inletValue      uniform ${concentration_extern}; // $internalField;
+        value           uniform ${concentration_extern}; // $internalField;
 
     }
     canal_wall

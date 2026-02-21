@@ -32,10 +32,10 @@ divSchemes
 {
     default             none;
 
-    div(phi,U)          Gauss upwind;
-    div(phi,Yi_h)       Gauss limitedLinear 1;
+    div(phi,U)          Gauss linearUpwind grad(U);
+    div(phi,Yi_h)       Gauss limitedLinear01 1.0;
     div(phi,k)          Gauss linearUpwind limitedGrad;
-    div(phi,epsilon)    Gauss linearUpwind limitedGrad;
+    div(phi,omega)      Gauss linearUpwind limitedGrad;
     div(phi,K)          Gauss limitedLinear 1;
     div(phi,e)          Gauss limitedLinear 1;
     div(phi,h)          Gauss limitedLinear 1;
@@ -65,6 +65,11 @@ fluxRequired
 {
     default         no;
     p_rgh;
+}
+
+wallDist
+{
+    method          meshWave;
 }
 
 // ************************************************************************* //

@@ -24,16 +24,17 @@ sparkIgnition
         type        scale;
         scale       squarePulse;
         start       ${time_start_ignition};
-        duration    0.20;
-        value       10;
+        duration    0.02;
+        value       20;
     }
 
 }
 
 
-radiation //TODO: Procurar no que interfere aqui
+radiation
 {
     type    radiation;
+    active  off;
     libs    ("libradiationModels.so");
 }
 

@@ -14,11 +14,11 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-combustionModel PaSR;
+combustionModel PaSR; //Laminar doesn't work
 
 PaSRCoeffs
 {
-    Cmix                1.0;
+    Cmix                0.0;
 }
 
 // ************************************************************************* //
